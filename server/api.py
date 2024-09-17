@@ -1,17 +1,35 @@
 from flask import (
-    Blueprint, flash, g, request, jsonify
+    Blueprint, request,
 )
-
-from werkzeug.exceptions import abort
 
 from server.auth import login_required
 from server.db import get_db
 
-import json
+import datetime
+import sqlite3
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
 # Users
+
+class User:
+    def __init__(
+            self,
+            id: int, 
+            username: str, 
+            email: str
+            ):
+        self.id: int = id
+        self.username: str = username
+        self.email: str = email
+
+    @classmethod
+    def from_row(cls, row: sqlite3.Row):
+        return cls(
+                row["id"],
+                row["username"],
+                row["email"]
+            )
 
 @bp.route("/users")
 def users():
@@ -20,7 +38,7 @@ def users():
         "SELECT * FROM users"
     ).fetchall()
 
-    return [tuple(row) for row in users]
+    return [User.from_row(row) for row in users]
 
 @bp.route("/user", methods=("POST",))
 def add_user():
@@ -36,11 +54,7 @@ def user(id):
             (id,)
         ).fetchone()
 
-        return {
-            "id": user["id"],
-            "username": user["username"],
-            "email": user["email"],
-        }
+        return User.from_row(user)
 
     elif request.method == "POST":
         # TODO:implement
@@ -51,22 +65,34 @@ def user(id):
 # Quests
 
 class Quest:
-    def __init__(self, id, name, email, diet, participating, responded, edited, group_id, group_name, type_id, type_name):
-        self.id = id
-        self.name = name
-        self.email = email
-        self.diet = diet
-        self.participating = bool(participating)
-        self.responded = responded
-        self.edited = edited
-        self.group_id = group_id
-        self.group_name = group_name
-        self.type_id = type_id
-        self.type_name = type_name
+    def __init__(
+            self, 
+            id: int, 
+            name: str, 
+            email: str, 
+            diet: str, 
+            participating: bool, 
+            responded: datetime.datetime, 
+            edited: datetime.datetime, 
+            group_id: int, 
+            group_name: str, 
+            type_id: int, 
+            type_name: str
+            ):
+        self.id: int = id
+        self.name: str = name
+        self.email: str = email
+        self.diet: str = diet
+        self.participating: bool = bool(participating)
+        self.responded: datetime.datetime = responded
+        self.edited: datetime.datetime = edited
+        self.group_id: int = group_id
+        self.group_name: str = group_name
+        self.type_id: int = type_id
+        self.type_name: str = type_name
 
     @classmethod
-    def from_row(cls, row):
-        print(type(row))
+    def from_row(cls, row: sqlite3.Row):
         return cls(
             row["id"],
             row["name"],
@@ -138,15 +164,16 @@ def quest(id):
 # Groups
 
 class Group:
-    def __init__(self, id, name, passkey):
-        self.id = id
-        self.name = name
-        self.passkey = passkey
+    def __init__(self, id: int, name: str):
+        self.id: int = id
+        self.name: str = name
 
     @classmethod
-    def from_row(cls, row):
-        print(type(row))
-        return cls(row["id"], row["name"], row["passkey"])
+    def from_row(cls, row: sqlite3.Row):
+        return cls(row["id"], row["name"])
+
+    def to_json(self):
+        return self.__dict__
 
 @bp.route("/groups")
 def groups():
@@ -156,7 +183,7 @@ def groups():
         "SELECT * FROM groups"
     ).fetchall()
 
-    return [Group.from_row(row) for row in groups]
+    return [Group.from_row(row).to_json() for row in groups]
 
  
 @bp.route("/group/<id>", methods=("GET", "POST"))
@@ -169,7 +196,7 @@ def group(id):
         ).fetchone()
 
         if group is not None:
-            return Group.from_row(group)
+            return Group.from_row(group).to_json()
 
         return "Quest not found"
 
@@ -181,8 +208,45 @@ def group(id):
 
 # Types
 
+class Type:
+    def __init__(self, id: int, name: str):
+        self.id: int = id
+        self.name: str = name
 
+    @classmethod
+    def from_row(cls, row: sqlite3.Row):
+        return cls(row["id"], row["name"])
 
-# Sessions
+    def to_json(self):
+        return self.__dict__
 
+@bp.route("/types")
+def types():
+    db = get_db()
 
+    types = db.execute(
+        "SELECT * FROM types"
+    ).fetchall()
+
+    return [Type.from_row(row).to_json() for row in types]
+
+ 
+@bp.route("/type/<id>", methods=("GET", "POST"))
+def type(id):
+    db = get_db()
+    if request.method == "GET":
+        type = db.execute(
+            "SELECT * FROM types WHERE id=?", 
+            (id,)
+        ).fetchone()
+
+        if type is not None:
+            return Type.from_row(type).to_json()
+
+        return "Type not found"
+
+    elif request.method == "POST":
+        # TODO:implement
+        pass
+
+    return []
