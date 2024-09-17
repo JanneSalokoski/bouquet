@@ -16,9 +16,9 @@ CREATE TABLE quests (
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   diet TEXT NOT NULL,
-  participating BOOL NOT NULL,
-  responded TIMESTAMP DEFAULT 0,
-  edited TIMESTAMP DEFAULT 0,
+  participating BOOL NOT NULL DEFAULT FALSE,
+  responded TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  edited TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   grp_id INT NOT NULL,
   type_id INT NOT NULL,
@@ -44,3 +44,15 @@ CREATE TABLE sessions (
 
   FOREIGN KEY (user_id) REFERENCES users (id)
 );
+
+INSERT INTO groups (
+  name, passkey
+) VALUES ( "hääpari", "testi" );
+
+INSERT INTO types (
+  name
+) VALUES ( "sukulaiset" );
+
+INSERT INTO quests (
+  name, email, diet, grp_id, type_id
+) VALUES ( "Janne", "janne.salokoski@helsinki.fi", "Laktoositon", 1, 1 );
