@@ -19,6 +19,11 @@ def create_app(test_config=None):
     except OSError:
         pass
 
+    @app.after_request
+    def add_header(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+
     @app.route("/test")
     def test():
         return "Hello, World!"
