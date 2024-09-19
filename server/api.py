@@ -148,7 +148,14 @@ def quest(id):
     db = get_db()
     if request.method == "GET":
         quest = db.execute(
-            "SELECT * FROM quests WHERE id=?", 
+            """SELECT q.id, q.name, q.email, q.diet, q.participating,
+            q.responded, q.edited, q.grp_id, g.name as 'group_name',
+            q.type_id, t.name as 'type_name'
+            FROM quests as q
+            INNER JOIN groups as g ON g.id == q.grp_id
+            INNER JOIN types as t ON t.id == q.type_id
+            WHERE q.id=?
+            """,
             (id,)
         ).fetchone()
 
